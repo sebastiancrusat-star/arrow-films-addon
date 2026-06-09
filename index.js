@@ -1,14 +1,14 @@
 const { addonBuilder, serveHTTP } = require("stremio-addon-sdk");
 const fs = require("fs");
 
-// Cargamos el archivo JSON que tiene la metadata
+// Cargamos la base de datos
 const movies = JSON.parse(fs.readFileSync("./datos_movies.json", "utf8"));
 
 const manifest = {
-    id: "org.arrow.addon",
-    version: "1.0.0",
+    id: "org.arrow.addon.final",
+    version: "1.0.1",
     name: "Arrow 4K Collection",
-    description: "Catálogo Arrow Video con afiches y metadata",
+    description: "Catálogo Arrow Video compatible con todos los addons RD",
     resources: ["catalog", "meta"],
     types: ["movie"],
     catalogs: [{ 
@@ -16,25 +16,19 @@ const manifest = {
         id: "arrow_catalog", 
         name: "Arrow Library" 
     }],
-    idPrefixes: ["tmdb"]
+    // Aceptamos ambos formatos para que Comet/Torrentio no se pierdan
+    idPrefixes: ["tt", "tmdb"] 
 };
 
 const builder = new addonBuilder(manifest);
 
-// Manejador del catálogo: muestra todas las películas
-builder.defineCatalogHandler(({ extra }) => {
+builder.defineCatalogHandler(() => {
     return Promise.resolve({ metas: movies });
 });
 
-// Manejador de metadatos: muestra la info al hacer clic en una película
 builder.defineMetaHandler(({ id }) => {
     const movie = movies.find(m => m.id === id);
-    if (movie) {
-        return Promise.resolve({ meta: movie });
-    } else {
-        return Promise.reject("Movie not found");
-    }
+    return Promise.resolve({ meta: movie ? movie : null });
 });
 
-// Inicia el servidor en el puerto que asigne Render
 serveHTTP(builder.getInterface(), { port: process.env.PORT || 7000 });
